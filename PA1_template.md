@@ -4,12 +4,10 @@ author: "Curtis Cochran"
 date: "June 11, 2015"
 output: html_document
 ---
-```{r time, echo=F}
-time <- format(Sys.time(), "%a %b %d %X %Y")
-```
+
 ##Loading and preprocessing
 
-1. Downloaded and extracted the Activity Monitoring data on `r time` from 
+1. Downloaded and extracted the Activity Monitoring data on Sun Jun 14 9:03:25 AM 2015 from 
 https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip into a folder 
 called RepResearch1 in working directory.
 
@@ -23,7 +21,8 @@ The variables included in this dataset are:
 
 The dataset is stored in a comma-separated-value (CSV) file and there are a total of 17,568 observations in this dataset.
 
-```{r download, echo=TRUE}
+
+```r
 if(!file.exists("./RepResearch1")){dir.create("./RepResearch1")}
 fileUrl <- "http://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
 download.file(fileUrl,destfile="./RepResearch1/repactivitydata.zip",mode="wb",method="internal")
@@ -32,7 +31,8 @@ unzip("./RepResearch1/repactivitydata.zip",exdir="./RepResearch1",overwrite=TRUE
 
 Read in the csv file to myData
 
-```{r readcsv, echo=TRUE}
+
+```r
 myData <- read.csv("./RepResearch1/activity.csv")
 ```
 
@@ -40,7 +40,8 @@ myData <- read.csv("./RepResearch1/activity.csv")
 
 Calculate total number of steps per day and plot histogram.
 
-```{r histogram, echo=TRUE}
+
+```r
 library(plyr)
 library(ggplot2)
 completeData <- myData[complete.cases(myData),]
@@ -53,18 +54,26 @@ qplot(sum,data=totalsteps,
       ylab="Frequency")
 ```
 
+![plot of chunk histogram](figure/histogram-1.png) 
+
 Calculate Mean and Median
 
-```{r steps, echo=TRUE}
+
+```r
 summary <- summary(totalsteps)
 mean1 <- summary[4,2]
 median1 <- summary[3,2]
 print(c(mean1,median1))
 ```
 
+```
+## [1] "Mean   :10766  " "Median :10765  "
+```
+
 ##What is the average daily activity pattern?
 
-```{r activity,echo=TRUE}
+
+```r
 activity <- ddply(completeData,~interval,summarise,mean=mean(steps))
 qplot(interval,mean,
         data=activity,
@@ -73,22 +82,36 @@ qplot(interval,mean,
         ylab="Average Steps Taken")
 ```
 
+![plot of chunk activity](figure/activity-1.png) 
+
 Which interval has the highest average steps taken?
 
-```{r maxsteps, echo=TRUE}
+
+```r
 maxsteps <- activity[which(activity$mean==max(activity$mean)),]
 print(maxsteps,row.names=F)
+```
+
+```
+##  interval     mean
+##       835 206.1698
 ```
 
 ##Imputing missing values
 
 Number of missing values
-```{r missingvalues, echo=TRUE}
+
+```r
 sum(is.na(myData))
 ```
 
+```
+## [1] 2304
+```
+
 Filling in missing values using the mean steps taken for each interval
-```{r fillingin, echo=TRUE}
+
+```r
 ##merge data with mean steps taken for each interval from activity data
 merged <- merge(myData,activity,by.x="interval")
 merged$steps[is.na(merged$steps)] <- merged$mean[is.na(merged$steps)]
@@ -96,7 +119,8 @@ adjData <- subset(merged,select=-c(mean))
 ```
 
 Histogram of na_adjusted data
-```{r imputedData,echo=TRUE}
+
+```r
 totalsteps_adj <- ddply(adjData,~date,summarise,sum=sum(steps))
 qplot(sum,data=totalsteps_adj,
       geom="histogram",
@@ -106,27 +130,36 @@ qplot(sum,data=totalsteps_adj,
       ylab="Frequency")
 ```
 
+![plot of chunk imputedData](figure/imputedData-1.png) 
+
 Revised mean and median for na_adjusted data
-```{r steps_naadj, echo=TRUE}
+
+```r
 summary <- summary(totalsteps_adj)
 mean2 <- summary[4,2]
 median2 <- summary[3,2]
 print(c(mean2,median2))
 ```
 
-The Median adjusted slightly from `r median1` to `r median2`, however the means remained the same at `r mean2`.
+```
+## [1] "Mean   :10766  " "Median :10766  "
+```
+
+The Median adjusted slightly from Median :10765   to Median :10766  , however the means remained the same at Mean   :10766  .
 
 ##Are there differences in activity patterns between weekdays and weekends?
 
 Adding factor (daytype) to identify weekdays and weekends to the adjusted data:
-```{r addweekdays, echo=TRUE}
+
+```r
 adjData$weekday <- weekdays(as.Date(adjData$date))
 adjData$daytype <- as.factor(ifelse(adjData$weekday %in% c("Saturday","Sunday"), "Weekend", "Weekday")) 
 ```
 
 Activity chart by Weekday or Weekend
 
-```{r activitybytype,echo=TRUE}
+
+```r
 activitybytype <- ddply(adjData,daytype~interval,summarise,mean=mean(steps))
 qplot(interval,mean,
         data=activitybytype,
@@ -135,3 +168,5 @@ qplot(interval,mean,
         xlab="Intervals",
         ylab="Average Steps Taken")
 ```
+
+![plot of chunk activitybytype](figure/activitybytype-1.png) 
